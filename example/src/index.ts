@@ -6,12 +6,8 @@ import {
 
 import {
   NotebookModel, NotebookWidget,
-  NBData, populateNotebookModel,
+  NBData, populateNotebookModel, cells
 } from '../../lib/index';
-
-import {
-  isMarkdownCellModel
-} from '../../lib/cells'
 
 import {
   IKeyBinding, KeymapManager, keystrokeForKeydownEvent
@@ -42,7 +38,7 @@ function bindings(nbModel: NotebookModel) {
         handler: args => {
         if (nbModel.selectedCellIndex !== void 0) {
           let cell = nbModel.cells.get(nbModel.selectedCellIndex);
-          if (isMarkdownCellModel(cell) && !cell.rendered) {
+          if (cells.isMarkdownCellModel(cell) && !cell.rendered) {
             cell.rendered = true;
           }
         }

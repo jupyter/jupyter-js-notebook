@@ -3,3 +3,6 @@
 'use strict';
 
 export * from './notebook/index';
+
+import * as _cells from './cells/index';
+export const cells = _cells;
