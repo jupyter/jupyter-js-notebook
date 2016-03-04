@@ -9,6 +9,7 @@
     "diff-match-patch": "^1.0.0",
     "jupyter-js-services": "^0.5.2",
     "marked": "^0.3.5",
+    "mathjax": "^2.6.1",
     "phosphor-disposable": "^1.0.5",
     "phosphor-observablelist": "^1.0.0-beta",
     "phosphor-panel": "^1.0.0-rc.1",

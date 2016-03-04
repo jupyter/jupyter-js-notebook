@@ -3,6 +3,28 @@
   <head>
     <title>Notebook Demo</title>
     <link rel="stylesheet" type="text/css" href="index.css">
+    <script type="text/javascript">
+        window.MathJax = {
+            tex2jax: {
+              inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+              displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+              processEscapes: true,
+              processEnvironments: true
+            },
+            // Center justify equations in code and markdown cells. Elsewhere
+            // we use CSS to left justify single line equations in code cells.
+            displayAlign: 'center',
+            "HTML-CSS": {
+              availableFonts: [],
+              imageFont: null,
+              preferredFont: null,
+              webFont: 'STIX-Web',
+              styles: {'.MathJax_Display': {"margin": 0}},
+              linebreaks: { automatic: true }
+            },
+            delayStartupUntil: 'configured'
+        };
+    </script>
   </head>
   <body>
     <script id='jupyter-config-data' type="application/json">{ "baseUrl": "{{base_url}}" }</script>

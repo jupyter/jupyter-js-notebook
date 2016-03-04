@@ -30,6 +30,10 @@ import {
 } from '../output-area';
 
 import {
+  removeMath, replaceMath
+} from './mathjaxutils';
+
+import {
   ICodeCellModel, IMarkdownCellModel, ICellModel, IRawCellModel
 } from './model';
 
@@ -211,7 +215,12 @@ class MarkdownCellWidget extends BaseCellWidget {
     }
     let model = this.model as IMarkdownCellModel;
     if (model.rendered) {
-      this.rendered.node.innerHTML = marked(model.input.textEditor.text);
+      let data = removeMath(model.input.textEditor.text);
+      let html = marked(data['text']);
+      this.rendered.node.innerHTML = replaceMath(html, data['math']);
+      if ((window as any).MathJax) {
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, this.rendered.node]);
+      }
       this.input.parent = null;
       (this.layout as PanelLayout).addChild(this.rendered);
       this.addClass(RENDERED_CLASS);
