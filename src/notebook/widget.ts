@@ -337,6 +337,25 @@ class NotebookWidget extends Widget {
 }
 
 
+function createElements(tag: string, attr?: any, children?: HTMLElement[] | string): HTMLElement {
+  let el = document.createElement(tag);
+  if (attr !== void 0 && attr !== null) {
+    for (let x of Object.keys(attr)) {
+      (el as any)[x] = attr[x];
+    }
+  }
+  if (typeof children === 'string') {
+     el.textContent = children;
+  } else if (Array.isArray(children)) {
+    for (let c of children) {
+      el.appendChild(c);
+    }
+  }
+  return el;
+}
+
+let ce = createElements;
+
 /**
  * A class which provides a notebook toolbar widget.
  */
@@ -345,34 +364,23 @@ class NotebookToolbar extends Widget {
    * Create a new node for the widget.
    */
   static createNode(): HTMLElement {
-    let node = document.createElement('div');
-    let names = [TOOLBAR_SAVE, TOOLBAR_INSERT, TOOLBAR_CUT,
-                 TOOLBAR_COPY, TOOLBAR_PASTE,
-                 TOOLBAR_RUN, TOOLBAR_INTERRUPT,
-                 TOOLBAR_RESTART, TOOLBAR_CELL, 
-                 TOOLBAR_KERNEL, TOOLBAR_INDICATOR];
-    for (let name of names) {
-      let el: HTMLElement;
-      if (name === TOOLBAR_CELL) {
-        el = document.createElement('select');
-        for (let t of ['Code', 'Markdown', 'Raw']) {
-          let option = document.createElement('option');
-          option.value = t.toLowerCase();
-          option.textContent = t;
-          el.appendChild(option);
-        }
-      } else {
-        el = document.createElement('span');
-      }
-      el.className = name;
-      el.classList.add(TOOLBAR_ITEM);
-      let nonButtons = [TOOLBAR_CELL, TOOLBAR_KERNEL, TOOLBAR_INDICATOR];
-      if (nonButtons.indexOf(name) === -1) {
-        el.classList.add(TOOLBAR_BUTTON);
-      }
-      node.appendChild(el);
-    }
-    return node;
+    return  ce('div', void 0, [
+      ce('span', {className: `${TOOLBAR_SAVE} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('span', {className: `${TOOLBAR_INSERT} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('span', {className: `${TOOLBAR_CUT} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('span', {className: `${TOOLBAR_COPY} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('span', {className: `${TOOLBAR_PASTE} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('span', {className: `${TOOLBAR_RUN} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('span', {className: `${TOOLBAR_INTERRUPT} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('span', {className: `${TOOLBAR_RESTART} ${TOOLBAR_ITEM} ${TOOLBAR_BUTTON}`}),
+      ce('select', {className: `${TOOLBAR_CELL} ${TOOLBAR_ITEM}`}, [
+        ce('option', {value: 'code'}, 'Code'),
+        ce('option', {value: 'markdown'}, 'Markdown'),
+        ce('option', {value: 'raw'}, 'Raw')
+      ]),
+      ce('span', {className: `${TOOLBAR_KERNEL} ${TOOLBAR_ITEM}`}),
+      ce('span', {className: `${TOOLBAR_INDICATOR} ${TOOLBAR_ITEM}`}),
+    ]);
   }
 
   /**
