@@ -45,12 +45,6 @@ import {
 export
 type ScrollSetting = boolean | 'auto';
 
-/**
- * The interactivity modes for a cell.
- */
-export
-type CellMode = 'command' | 'edit';
-
 
 /**
  * The definition of a model object for a base cell.
@@ -81,11 +75,6 @@ interface IBaseCellModel extends IDisposable {
    * Whether the cell is the active cell in the notebook.
    */
   active: boolean;
-
-  /**
-   * The interactivity mode of the cell.
-   */
-  mode: CellMode;
 
   /**
    * The input area of the cell.
@@ -192,16 +181,6 @@ class BaseCellModel implements IBaseCellModel {
    */
   get stateChanged(): ISignal<IBaseCellModel, IChangedArgs<any>> {
     return CellModelPrivate.stateChangedSignal.bind(this);
-  }
-
-  /**
-   * The mode of the cell.
-   */
-  get mode(): CellMode {
-    return CellModelPrivate.modeProperty.get(this);
-  }
-  set mode(value: CellMode) {
-    CellModelPrivate.modeProperty.set(this, value);
   }
 
   /**
@@ -456,15 +435,6 @@ namespace CellModelPrivate {
    */
   export
   const stateChangedSignal = new Signal<IBaseCellModel, IChangedArgs<any>>();
-
- /**
-  * A property descriptor for the cell mode.
-  */
-  export
-  const modeProperty = new Property<IBaseCellModel, CellMode>({
-    name: 'mode',
-    notify: stateChangedSignal,
-  });
 
   /**
    * A property descriptor for the selected state of the cell.

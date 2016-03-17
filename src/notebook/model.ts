@@ -59,6 +59,13 @@ import {
 
 
 /**
+ * The interactivity modes for a cell.
+ */
+export
+type NotebookMode = 'command' | 'edit';
+
+
+/**
  * The definition of a model object for a notebook widget.
  */
 export
@@ -75,6 +82,11 @@ interface INotebookModel extends IDisposable {
    * This can be considered the default language of the notebook.
    */
   defaultMimetype: string;
+
+  /**
+   * The interactivity mode of the active cell.
+   */
+  mode: NotebookMode;
 
   /**
    * Whether the notebook has unsaved changes.
@@ -205,6 +217,16 @@ class NotebookModel implements INotebookModel {
    */
   get cells(): IObservableList<ICellModel> {
     return this._cells;
+  }
+
+  /**
+   * The mode of the cell.
+   */
+  get mode(): NotebookMode {
+    return NotebookModelPrivate.modeProperty.get(this);
+  }
+  set mode(value: NotebookMode) {
+    NotebookModelPrivate.modeProperty.set(this, value);
   }
 
   /**
@@ -413,7 +435,7 @@ class NotebookModel implements INotebookModel {
     if (this.activeCellIndex === this.cells.length - 1) {
       let cell = this.createCodeCell();
       this.cells.add(cell);
-      cell.mode = 'edit';  // This already sets the new index.
+      this.mode = 'edit';  // This already sets the new index.
     } else {
       this.activeCellIndex += 1;
     }
@@ -549,6 +571,15 @@ namespace NotebookModelPrivate {
    */
   export
   const stateChangedSignal = new Signal<INotebookModel, IChangedArgs<any>>();
+
+ /**
+  * A property descriptor for the active cell interactivity mode.
+  */
+  export
+  const modeProperty = new Property<INotebookModel, NotebookMode>({
+    name: 'mode',
+    notify: stateChangedSignal,
+  });
 
   /**
   * A property descriptor which holds the default mimetype for new code cells.

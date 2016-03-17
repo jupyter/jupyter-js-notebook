@@ -18,6 +18,10 @@ import {
 } from 'phosphor-properties';
 
 import {
+  ISignal, Signal
+} from 'phosphor-signaling';
+
+import {
   Widget
 } from 'phosphor-widget';
 
@@ -83,16 +87,6 @@ const RAW_CELL_CLASS = 'jp-RawCell';
 const RENDERED_CLASS = 'jp-mod-rendered';
 
 /**
- * The class name added to a cell in edit mode.
- */
-const EDIT_CLASS = 'jp-mod-editMode';
-
-/**
- * The class name added to a cell in command mode.
- */
-const COMMAND_CLASS = 'jp-mod-commandMode';
-
-/**
  * The text applied to an empty markdown cell.
  */
 const DEFAULT_MARKDOWN_TEXT = 'Type Markdown and LaTeX: $ α^2 $'
@@ -124,6 +118,13 @@ class BaseCellWidget extends Widget {
     this.layout = new PanelLayout();
     (this.layout as PanelLayout).addChild(this._input);
     model.stateChanged.connect(this.onModelChanged, this);
+  }
+
+  /**
+   * A signal emitted when the focus state of the cell's editor changes.
+   */
+  get editorFocusChanged(): ISignal<BaseCellWidget, boolean> {
+    return Private.editorFocusChangedSignal.bind(this);
   }
 
   /**
@@ -165,10 +166,10 @@ class BaseCellWidget extends Widget {
   handleEvent(event: Event) {
     switch (event.type) {
     case 'blur':
-      this.model.mode = 'command';
+      this.editorFocusChanged.emit(false);
       break;
     case 'focus':
-      this.model.mode = 'edit';
+      this.editorFocusChanged.emit(true);
       this.input.editor.focus();
       break;
     }
@@ -188,13 +189,6 @@ class BaseCellWidget extends Widget {
       this.addClass(SELECTED_CLASS);
     } else {
       this.removeClass(SELECTED_CLASS);
-    }
-    if (this.model.mode === 'edit') {
-      this.addClass(EDIT_CLASS);
-      this.removeClass(COMMAND_CLASS);
-    } else {
-      this.addClass(COMMAND_CLASS);
-      this.removeClass(EDIT_CLASS);
     }
   }
 
@@ -357,4 +351,16 @@ class RawCellWidget extends BaseCellWidget {
     super(model);
     this.addClass(RAW_CELL_CLASS);
   }
+}
+
+
+/**
+ * A namespace for cell widget private data.
+ */
+namespace Private {
+  /**
+   * A signal emitted when the focus state of the cell's editor changes.
+   */
+  export
+  const editorFocusChangedSignal = new Signal<BaseCellWidget, boolean>();
 }
