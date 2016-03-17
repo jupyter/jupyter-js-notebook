@@ -83,6 +83,16 @@ const RAW_CELL_CLASS = 'jp-RawCell';
 const RENDERED_CLASS = 'jp-mod-rendered';
 
 /**
+ * The class name added to a cell in edit mode.
+ */
+const EDIT_CLASS = 'jp-mod-editMode';
+
+/**
+ * The class name added to a cell in command mode.
+ */
+const COMMAND_CLASS = 'jp-mod-commandMode';
+
+/**
  * The text applied to an empty markdown cell.
  */
 const DEFAULT_MARKDOWN_TEXT = 'Type Markdown and LaTeX: $ α^2 $'
@@ -150,6 +160,21 @@ class BaseCellWidget extends Widget {
   }
 
   /**
+   * Handle DOM events for the widget.
+   */
+  handleEvent(event: Event) {
+    switch (event.type) {
+    case 'blur':
+      this.model.mode = 'command';
+      break;
+    case 'focus':
+      this.model.mode = 'edit';
+      this.input.editor.focus();
+      break;
+    }
+  }
+
+  /**
    * Handle `update_request` messages.
    */
   protected onUpdateRequest(message: Message): void {
@@ -164,6 +189,13 @@ class BaseCellWidget extends Widget {
     } else {
       this.removeClass(SELECTED_CLASS);
     }
+    if (this.model.mode === 'edit') {
+      this.addClass(EDIT_CLASS);
+      this.removeClass(COMMAND_CLASS);
+    } else {
+      this.addClass(COMMAND_CLASS);
+      this.removeClass(EDIT_CLASS);
+    }
   }
 
   /**
@@ -177,7 +209,14 @@ class BaseCellWidget extends Widget {
    * Handle `after-attach` messages to the cell.
    */
   protected onAfterAttach(msg: Message): void {
+    this.input.editor.node.addEventListener('focus', this, true);
+    this.input.editor.node.addEventListener('blur', this, true);
     this.update();
+  }
+
+  protected onBeforeDetach(msg: Message): void {
+    this.input.editor.node.removeEventListener('focus', this, true);
+    this.input.editor.node.removeEventListener('blur', this, true);
   }
 
   private _input: InputAreaWidget = null;

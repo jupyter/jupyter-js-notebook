@@ -35,7 +35,7 @@ import {
 } from 'phosphor-panel';
 
 import {
-  ICellModel, BaseCellWidget,
+  ICellModel,
   CodeCellWidget, MarkdownCellWidget,
   CodeCellModel, MarkdownCellModel, isMarkdownCellModel,
   RawCellModel, RawCellWidget
@@ -154,16 +154,6 @@ const TOOLBAR_PRESSED = 'jp-mod-pressed';
 const TOOLBAR_BUSY = 'jp-mod-busy';
 
 /**
- * The class name added to a cell in edit mode.
- */
-const EDIT_CLASS = 'jp-mod-editMode';
-
-/**
- * The class name added to a cell in command mode.
- */
-const COMMAND_CLASS = 'jp-mod-commandMode';
-
-/**
  * The maximum size of the delete stack.
  */
 const DELETE_STACK_SIZE = 10;
@@ -177,8 +167,8 @@ class NotebookWidget extends Widget {
   /**
    * Create a new cell widget given a cell model.
    */
-  static createCell(cell: ICellModel): BaseCellWidget {
-    let widget: BaseCellWidget;
+  static createCell(cell: ICellModel): Widget {
+    let widget: Widget;
     switch(cell.type) {
     case 'code':
       widget = new CodeCellWidget(cell as CodeCellModel);
@@ -192,7 +182,7 @@ class NotebookWidget extends Widget {
     default:
       // If there are any issues, just return a blank placeholder
       // widget so the lists stay in sync.
-      widget = new BaseCellWidget(cell);
+      widget = new Widget();
     }
     widget.addClass(NB_CELL_CLASS);
     return widget;
@@ -232,7 +222,6 @@ class NotebookWidget extends Widget {
       cellsLayout.addChild(factory(model.cells.get(i)));
     }
     model.cells.changed.connect(this.onCellsChanged, this);
-    model.stateChanged.connect(this.onModelChanged, this);
   }
 
   /**
@@ -395,49 +384,6 @@ class NotebookWidget extends Widget {
   }
 
   /**
-   * Handle DOM events for the widget.
-   */
-  handleEvent(event: Event) {
-    switch (event.type) {
-    case 'blur':
-      this.model.mode = 'command';
-      break;
-    case 'focus':
-      this.model.mode = 'edit';
-      // Activate the appropriate cell.
-      let layout = this._notebook.layout as PanelLayout;
-      for (let i = 0; i < layout.childCount(); i++) {
-        let widget = layout.childAt(i) as BaseCellWidget;
-        if (widget.node.contains(event.target as HTMLElement)) {
-          this.model.activeCellIndex = i;
-          widget.input.editor.focus();
-          break;
-        }
-      }
-      break;
-    }
-  }
-
-  /**
-   * Initialize a cell widget.
-   */
-  protected initCell(cell: BaseCellWidget): void {
-    cell.input.editor.node.addEventListener('focus', this, true);
-    cell.input.editor.node.addEventListener('blur', this, true);
-  }
-
-  /**
-   * Dispose of a cell widget.
-   */
-  protected disposeCell(cell: BaseCellWidget): void {
-    cell.input.editor.node.removeEventListener('focus', this, true);
-    cell.input.editor.node.removeEventListener('blur', this, true);
-    let layout = this.layout as PanelLayout;
-    layout.removeChild(cell);
-    cell.dispose();
-  }
-
-  /**
    * Handle a change cells event.  This function must be on this class
    * because it uses the static [createCell] method.
    */
@@ -445,73 +391,39 @@ class NotebookWidget extends Widget {
     let layout = this._notebook.layout as PanelLayout;
     let constructor = this.constructor as typeof NotebookWidget;
     let factory = constructor.createCell;
-    let widget: BaseCellWidget;
+    let widget: Widget;
     switch(args.type) {
     case ListChangeType.Add:
       widget = factory(args.newValue as ICellModel);
       layout.insertChild(args.newIndex, widget);
-      this.initCell(widget);
       break;
     case ListChangeType.Move:
       layout.insertChild(args.newIndex, layout.childAt(args.oldIndex));
       break;
     case ListChangeType.Remove:
-      widget = layout.childAt(args.oldIndex) as BaseCellWidget;
-      this.disposeCell(widget);
+      widget = layout.childAt(args.oldIndex);
+      layout.removeChild(widget);
+      widget.dispose();
       break;
     case ListChangeType.Replace:
       let oldValues = args.oldValue as ICellModel[];
       for (let i = args.oldIndex; i < oldValues.length; i++) {
-        widget = layout.childAt(args.oldIndex) as BaseCellWidget;
-        this.disposeCell(widget);
+        widget = layout.childAt(args.oldIndex);
+        layout.removeChild(widget);
+        widget.dispose();
       }
       let newValues = args.newValue as ICellModel[];
       for (let i = newValues.length; i < 0; i--) {
         widget = factory(newValues[i])
         layout.insertChild(args.newIndex, widget);
-        this.initCell(widget);
       }
       break;
     case ListChangeType.Set:
-      widget = layout.childAt(args.newIndex) as BaseCellWidget;
-      this.disposeCell(widget);
+      widget = layout.childAt(args.newIndex);
+      layout.removeChild(widget);
+      widget.dispose();
       widget = factory(args.newValue as ICellModel);
       layout.insertChild(args.newIndex, widget);
-      this.initCell(widget);
-      break;
-    }
-    this.update();
-  }
-
-  /**
-   * Handle `update-request` messages sent to the widget.
-   */
-  protected onUpdateRequest(msg: Message): void {
-    // Set the appropriate classes on the cells.
-    let model = this.model;
-    let cells = this.model.cells;
-    let mode = model.mode;
-    let layout = this._notebook.layout as PanelLayout;
-    for (let i = 0; i < cells.length; i++) {
-      let cell = cells.get(i);
-      let widget = layout.childAt(i);
-      if (mode === 'edit') {
-        widget.addClass(EDIT_CLASS);
-        widget.removeClass(COMMAND_CLASS);
-      } else {
-        widget.addClass(COMMAND_CLASS);
-        widget.removeClass(EDIT_CLASS);
-      }
-    }
-  }
-
-  /**
-   * Handle changes to the notebook model.
-   */
-  protected onModelChanged(model: INotebookModel, args: IChangedArgs<any>): void {
-    switch (args.name) {
-    case 'mode':
-      this.update();
       break;
     }
   }
@@ -665,7 +577,7 @@ class NotebookCells extends Widget {
     let cell = model.cells.get(i);
     if (isMarkdownCellModel(cell) && cell.rendered) {
       cell.rendered = false;
-      model.mode = 'edit';
+      cell.mode = 'edit';
     }
   }
 
