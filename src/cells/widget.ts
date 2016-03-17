@@ -206,7 +206,7 @@ class BaseCellWidget extends Widget {
   }
 
   /**
-   * Handle `after-attach` messages to the cell.
+   * Handle `after-attach` messages sent to the cell.
    */
   protected onAfterAttach(msg: Message): void {
     this.input.editor.node.addEventListener('focus', this, true);
@@ -214,6 +214,9 @@ class BaseCellWidget extends Widget {
     this.update();
   }
 
+  /**
+   * Handle `before-detach` messages sent to the cell.
+   */
   protected onBeforeDetach(msg: Message): void {
     this.input.editor.node.removeEventListener('focus', this, true);
     this.input.editor.node.removeEventListener('blur', this, true);
