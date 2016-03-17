@@ -18,6 +18,10 @@ import {
 } from 'phosphor-properties';
 
 import {
+  ISignal, Signal
+} from 'phosphor-signaling';
+
+import {
   Widget
 } from 'phosphor-widget';
 
@@ -83,16 +87,6 @@ const RAW_CELL_CLASS = 'jp-RawCell';
 const RENDERED_CLASS = 'jp-mod-rendered';
 
 /**
- * The class name added to a cell in edit mode.
- */
-const EDIT_CLASS = 'jp-mod-editMode';
-
-/**
- * The class name added to a cell in command mode.
- */
-const COMMAND_CLASS = 'jp-mod-commandMode';
-
-/**
  * The text applied to an empty markdown cell.
  */
 const DEFAULT_MARKDOWN_TEXT = 'Type Markdown and LaTeX: $ α^2 $'
@@ -124,6 +118,13 @@ class BaseCellWidget extends Widget {
     this.layout = new PanelLayout();
     (this.layout as PanelLayout).addChild(this._input);
     model.stateChanged.connect(this.onModelChanged, this);
+  }
+
+  /**
+   * A signal emitted when the focus state of the cell's editor changes.
+   */
+  get editorFocusChanged(): ISignal<BaseCellWidget, boolean> {
+    return Private.editorFocusChangedSignal.bind(this);
   }
 
   /**
@@ -160,6 +161,21 @@ class BaseCellWidget extends Widget {
   }
 
   /**
+   * Handle DOM events for the widget.
+   */
+  handleEvent(event: Event) {
+    switch (event.type) {
+    case 'blur':
+      this.editorFocusChanged.emit(false);
+      break;
+    case 'focus':
+      this.editorFocusChanged.emit(true);
+      this.input.editor.focus();
+      break;
+    }
+  }
+
+  /**
    * Handle `update_request` messages.
    */
   protected onUpdateRequest(message: Message): void {
@@ -174,13 +190,6 @@ class BaseCellWidget extends Widget {
     } else {
       this.removeClass(SELECTED_CLASS);
     }
-    if (this.model.mode === 'edit') {
-      this.addClass(EDIT_CLASS);
-      this.removeClass(COMMAND_CLASS);
-    } else {
-      this.addClass(COMMAND_CLASS)
-      this.removeClass(EDIT_CLASS);
-    }
   }
 
   /**
@@ -191,10 +200,20 @@ class BaseCellWidget extends Widget {
   }
 
   /**
-   * Handle `after-attach` messages to the cell.
+   * Handle `after-attach` messages sent to the cell.
    */
   protected onAfterAttach(msg: Message): void {
+    this.input.editor.node.addEventListener('focus', this, true);
+    this.input.editor.node.addEventListener('blur', this, true);
     this.update();
+  }
+
+  /**
+   * Handle `before-detach` messages sent to the cell.
+   */
+  protected onBeforeDetach(msg: Message): void {
+    this.input.editor.node.removeEventListener('focus', this, true);
+    this.input.editor.node.removeEventListener('blur', this, true);
   }
 
   private _input: InputAreaWidget = null;
@@ -332,4 +351,16 @@ class RawCellWidget extends BaseCellWidget {
     super(model);
     this.addClass(RAW_CELL_CLASS);
   }
+}
+
+
+/**
+ * A namespace for cell widget private data.
+ */
+namespace Private {
+  /**
+   * A signal emitted when the focus state of the cell's editor changes.
+   */
+  export
+  const editorFocusChangedSignal = new Signal<BaseCellWidget, boolean>();
 }
