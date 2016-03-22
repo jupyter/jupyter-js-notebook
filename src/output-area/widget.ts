@@ -26,17 +26,11 @@ import {
   Transformime,
   TextTransformer,
   ImageTransformer,
-  HTMLTransformer
-} from 'transformime';
-
-import {
-  consoleTextTransform,
-  markdownTransform,
-  LaTeXTransform,
-  PDFTransform,
-  SVGTransform,
-  ScriptTransform
-} from 'transformime-jupyter-transformers';
+  HTMLTransformer,
+  SVGTransformer,
+  JavascriptTransformer,
+  LatexTransformer
+} from '../transformime';
 
 import {
   sanitize
@@ -115,15 +109,12 @@ const RESULT_CLASS = 'jp-OutputArea-result';
  * important than earlier ones.
  */
 const transformers = [
-  TextTransformer,
-  PDFTransform,
-  ImageTransformer,
-  SVGTransform,
-  consoleTextTransform,
-  LaTeXTransform,
-  markdownTransform,
-  HTMLTransformer,
-  ScriptTransform
+  new TextTransformer(),
+  new ImageTransformer(),
+  new SVGTransformer(),
+  new LatexTransformer(),
+  new HTMLTransformer(),
+  new JavascriptTransformer()
 ];
 
 /**
@@ -140,7 +131,7 @@ const sanitizable = ['text/svg', 'text/html'];
 /**
  * The global transformime transformer.
  */
-const transform = new Transformime(transformers);
+const transform = new Transformime<Widget>(transformers);
 
 
 /**
@@ -211,7 +202,7 @@ class OutputAreaWidget extends Widget {
       widget.addClass(DISPLAY_CLASS);
       break;
     case 'stream':
-      bundle = {'jupyter/console-text': (output as IStream).text};
+      bundle = {'application/vnd.jupyter.console-text': (output as IStream).text};
       if ((output as IStream).name == 'stdout') {
         widget.addClass(STDOUT_CLASS);
       } else {
@@ -221,7 +212,7 @@ class OutputAreaWidget extends Widget {
     case 'error':
       let out: IError = output as IError;
       let traceback = out.traceback.join('\n');
-      bundle = {'jupyter/console-text': traceback || `${out.ename}: ${out.evalue}`};
+      bundle = {'application/vnd.jupyter.console-text': traceback || `${out.ename}: ${out.evalue}`};
       widget.addClass(ERROR_CLASS);
       break;
     default:
@@ -250,11 +241,11 @@ class OutputAreaWidget extends Widget {
         }
       }
     }
-
-    transform.transform(bundle, document).then(result => {
-      widget.node.appendChild(result.el);
-      result.el.classList.add(RESULT_CLASS);
-    });
+   
+    // TODO: Make widget a Panel, and add w as a phosphor child.
+    let w = transform.transform(bundle);
+    w.addClass(RESULT_CLASS);
+    widget.node.appendChild(w.node);
     return widget;
   }
 

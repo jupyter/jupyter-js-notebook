@@ -14,6 +14,7 @@
     "files": [
         "../../src/typings/codemirror/codemirror.d.ts",
         "../../src/typings/diff-match-patch/diff-match-patch.d.ts",
+        "../../src/typings/es6-collections/es6-collections.d.ts",
         "../../src/typings/es6-promise/es6-promise.d.ts",
         "../../src/typings/expect.js/expect.js.d.ts",
         "../../src/typings/marked/marked.d.ts",
@@ -21,7 +22,6 @@
         "../../src/typings/mocha/mocha.d.ts",
         "../../src/typings/require/require.d.ts",
         "../../src/typings/sanitizer/sanitizer.d.ts",
-        "../../src/typings/transformime/transformime.d.ts",
         "index.ts"
     ]
 }
