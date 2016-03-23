@@ -2,6 +2,9 @@
 // Distributed under the terms of the Modified BSD License.
 'use strict';
 
+import * as katex
+  from 'katex';
+
 
 // Some magic for deferring mathematical expressions to MathJax
 // by hiding them from the Markdown parser.
@@ -152,6 +155,8 @@ function typeset(node: HTMLElement): void {
   }
   if ((window as any).MathJax) {
     MathJax.Hub.Queue(['Typeset', MathJax.Hub, node]);
+  } else {
+    node.innerHTML = katex.renderToString(node.textContent);
   }
 }
 
