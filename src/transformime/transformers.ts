@@ -76,7 +76,7 @@ class ConsoleTextTransformer implements ITransformer<Widget> {
 
   transform(mimetype: string, data: string): Widget {
     let w = new Widget();
-    w.node.textContent = this._converter.toHtml(data);
+    w.node.innerHTML = this._converter.toHtml(data);
     return w;
   }
 
