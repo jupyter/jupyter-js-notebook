@@ -5,9 +5,6 @@ import {
   ITransformer
 } from './transformime';
 
-import * as katex 
-  from 'katex';
-
 import * as Convert
   from 'ansi-to-html';
 
@@ -15,7 +12,9 @@ import {
   Widget
 } from 'phosphor-widget';
 
-
+import {
+  MathWidget
+} from './mathwidget';
 
 /**
  * A transformer for raw html.
@@ -24,8 +23,8 @@ export
 class HTMLTransformer implements ITransformer<Widget> {
   mimetypes = ['text/html'];
   transform(mimetype: string, data: string): Widget {
-    let w = new Widget();
-    w.node.innerHTML = data;
+    let w = new MathWidget();
+    w.setInnerHTML(data);
     return w;
   }
 }
@@ -127,14 +126,8 @@ export
 class LatexTransformer implements ITransformer<Widget> {
   mimetypes = ['text/latex'];
   transform(mimetype: string, data: string): Widget {
-    let w = new Widget();
-    w.node.textContent = data;
-    if (typeof MathJax !== "undefined") {
-      w.node.textContent = data;
-      MathJax.Hub.Queue(["Typeset", MathJax.Hub, w.node]);
-    } else {
-      w.node.innerHTML = katex.renderToString(data);
-    }
+    let w = new MathWidget();
+    w.setTextContent(data);
     return w;
   }
 }
