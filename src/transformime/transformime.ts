@@ -12,26 +12,22 @@ type MimeMap<T> = { [mimetype: string]: T };
 
 export
 class Transformime<T> {
-  constructor(transformers: ITransformer<T>[]) {
+  constructor(transformers: MimeMap<ITransformer<T>> = {}, order: string[] = []) {
     this._transformers = transformers;
+    this._order = order;
   }
 
   transform(bundle: MimeMap<string>): T {
-    for (let t of this._transformers) {
-      for (let m of t.mimetypes) {
-        if (bundle.hasOwnProperty(m)) {
-            return t.transform(m, bundle[m])
-        }
-      }
+    let mimetype = this.preferredMimetype(bundle);
+    if (mimetype) {
+        return this.transformers[mimetype].transform(mimetype, bundle[mimetype]);
     }
   }
   
   preferredMimetype(bundle: MimeMap<string>): string {
-    for (let t of this._transformers) {
-      for (let m of t.mimetypes) {
-        if (bundle.hasOwnProperty(m)) {
-            return m;
-        }
+    for (let m of this.order) {
+      if (bundle.hasOwnProperty(m)) {
+        return m;
       }
     }
   }
@@ -40,5 +36,10 @@ class Transformime<T> {
       return this._transformers;
   }
   
-  private _transformers: ITransformer<T>[]
+  get order() {
+      return this._order;
+  }
+  
+  private _transformers: MimeMap<ITransformer<T>>;
+  private _order: string[];
 }
