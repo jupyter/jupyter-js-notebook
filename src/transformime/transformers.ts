@@ -5,11 +5,21 @@ import {
   ITransformer
 } from './transformime';
 
+import * as katex 
+  from 'katex';
+
+import * as Convert
+  from 'ansi-to-html';
+
 import {
   Widget
 } from 'phosphor-widget';
 
 
+
+/**
+ * A transformer for raw html.
+ */
 export
 class HTMLTransformer implements ITransformer<Widget> {
   mimetypes = ['text/html'];
@@ -20,6 +30,10 @@ class HTMLTransformer implements ITransformer<Widget> {
   }
 }
 
+
+/**
+ * A transformer for `<img>` data.
+ */
 export
 class ImageTransformer implements ITransformer<Widget> {
   mimetypes = ['image/png', 'image/jpeg', 'image/gif'];
@@ -32,6 +46,10 @@ class ImageTransformer implements ITransformer<Widget> {
   }
 }
 
+
+/**
+ * A transformer for raw `textContent` data.
+ */
 export
 class TextTransformer implements ITransformer<Widget> {
   mimetypes = ['text/plain'];
@@ -42,17 +60,34 @@ class TextTransformer implements ITransformer<Widget> {
   }
 }
 
+
+/**
+ * A transformer for Jupyter console text data.
+ */
 export
 class ConsoleTextTransformer implements ITransformer<Widget> {
   mimetypes = ['application/vnd.jupyter.console-text'];
+
+  constructor() {
+    this._converter = new Convert({
+      escapeXML: true,
+      newline: true
+    });
+  }
+
   transform(mimetype: string, data: string): Widget {
     let w = new Widget();
-    // See https://github.com/nteract/transformime-jupyter-transformers/blob/master/src/console-text.transform.js
-    w.node.textContent = data;
+    w.node.textContent = this._converter.toHtml(data);
     return w;
   }
+
+  private _converter: Convert = null;
 }
 
+
+/**
+ * A transformer for raw `<script>` data.
+ */
 export
 class JavascriptTransformer implements ITransformer<Widget> {
   mimetypes = ['text/javascript', 'application/javascript'];
@@ -66,24 +101,40 @@ class JavascriptTransformer implements ITransformer<Widget> {
   }
 }
 
+
+/**
+ * A transformer for `<svg>` data.
+ */
 export
 class SVGTransformer implements ITransformer<Widget> {
   mimetypes = ['image/svg+xml'];
   transform(mimetype: string, data: string): Widget {
     let w = new Widget();
     w.node.innerHTML = data;
+    let svgElement = w.node.getElementsByTagName('svg')[0];
+    if (!svgElement) {
+      throw new Error("SVGTransform: Error: Failed to create <svg> element");
+    }
     return w;
   }
 }
 
+
+/**
+ * A transformer for LateX data.
+ */
 export
 class LatexTransformer implements ITransformer<Widget> {
   mimetypes = ['text/latex'];
   transform(mimetype: string, data: string): Widget {
     let w = new Widget();
     w.node.textContent = data;
-    // TODO: do something to the class to get MathJax to render it?
-    // TODO: use katex if mathjax isn't defined?
+    if (typeof MathJax !== "undefined") {
+      w.node.textContent = data;
+      MathJax.Hub.Queue(["Typeset", MathJax.Hub, w.node]);
+    } else {
+      w.node.innerHTML = katex.renderToString(data);
+    }
     return w;
   }
 }
