@@ -24,12 +24,15 @@ import {
 
 import {
   Transformime,
+  ConsoleTextTransformer,
   TextTransformer,
   ImageTransformer,
   HTMLTransformer,
   SVGTransformer,
   JavascriptTransformer,
-  LatexTransformer
+  LatexTransformer,
+  MimeMap,
+  ITransformer
 } from '../transformime';
 
 import {
@@ -105,23 +108,35 @@ const RESULT_CLASS = 'jp-OutputArea-result';
  * A list of transformers used to render outputs
  *
  * #### Notes
- * The transformers are in ascending priority--later transforms are more
- * important than earlier ones.
+ * The transformers are checked in order--an earlier one
+ * takes precedence over a later one.
  */
 const transformers = [
-  new TextTransformer(),
+  new JavascriptTransformer(),
+  new HTMLTransformer(),
   new ImageTransformer(),
   new SVGTransformer(),
   new LatexTransformer(),
-  new HTMLTransformer(),
-  new JavascriptTransformer()
+  new ConsoleTextTransformer(),
+  new TextTransformer()
 ];
+
+let transformer_map: MimeMap<ITransformer<Widget>> = {};
+let transformer_order: string[] = [];
+
+for (let t of transformers) {
+  for (let m of t.mimetypes) {
+    transformer_order.push(m);
+    transformer_map[m] = t;
+  }
+}
+
 
 /**
  * A list of outputs considered safe.
  */
-const safeOutputs = ['text/plain', 'text/latex', 'image/png', 'image/jpeg',
-                     'jupyter/console-text'];
+const safeOutputs = ['text/plain', 'text/latex', 'image/png', 'image/jpeg', 
+                     'application/vnd.jupyter.console-text'];
 
 /**
  * A list of outputs that are sanitizable.
@@ -131,7 +146,7 @@ const sanitizable = ['text/svg', 'text/html'];
 /**
  * The global transformime transformer.
  */
-const transform = new Transformime<Widget>(transformers);
+const transform = new Transformime<Widget>(transformer_map, transformer_order);
 
 
 /**
@@ -249,6 +264,7 @@ class OutputAreaWidget extends Widget {
         widget.addChild(child);
       } else {
         console.log("Did not find transformer for output mimebundle.")
+        console.log(bundle);
       }
     }
     return widget;
