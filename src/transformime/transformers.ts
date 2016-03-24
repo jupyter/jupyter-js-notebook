@@ -13,8 +13,55 @@ import {
 } from 'phosphor-widget';
 
 import {
-  MathWidget
-} from './mathwidget';
+  Message
+} from 'phosphor-messaging';
+
+import {
+  typeset
+} from '../utils/latex';
+
+
+/**
+ * A widget for displaying HTML and rendering math.
+ */
+export
+class HTMLWidget extends Widget {
+  constructor(html: string) {
+    super();
+    this.node.innerHTML = html;
+  }
+
+  /**
+   * A message handler invoked on an `'after-attach'` message.
+   *
+   * ####Notes
+   * If the node is visible, it is typeset.
+   */
+  onAfterAttach(msg: Message) {
+    typeset(this.node);
+  }
+}
+
+/**
+ * A widget for displaying text and rendering math.
+ */
+export
+class LatexWidget extends Widget {
+  constructor(text: string) {
+    super();
+    this.node.textContent = text;
+  }
+
+  /**
+   * A message handler invoked on an `'after-attach'` message.
+   *
+   * ####Notes
+   * If the node is visible, it is typeset.
+   */
+  onAfterAttach(msg: Message) {
+    typeset(this.node);
+  }
+}
 
 /**
  * A transformer for raw html.
@@ -23,9 +70,7 @@ export
 class HTMLTransformer implements ITransformer<Widget> {
   mimetypes = ['text/html'];
   transform(mimetype: string, data: string): Widget {
-    let w = new MathWidget();
-    w.setInnerHTML(data);
-    return w;
+    return new HTMLWidget(data);
   }
 }
 
@@ -126,8 +171,6 @@ export
 class LatexTransformer implements ITransformer<Widget> {
   mimetypes = ['text/latex'];
   transform(mimetype: string, data: string): Widget {
-    let w = new MathWidget();
-    w.setTextContent(data);
-    return w;
+    return new LatexWidget(data);
   }
 }
