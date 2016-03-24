@@ -11,7 +11,7 @@ import {
 } from 'phosphor-messaging';
 
 import {
-  PanelLayout
+  Panel, PanelLayout
 } from 'phosphor-panel';
 
 import {
@@ -24,19 +24,16 @@ import {
 
 import {
   Transformime,
+  ConsoleTextTransformer,
   TextTransformer,
   ImageTransformer,
-  HTMLTransformer
-} from 'transformime';
-
-import {
-  consoleTextTransform,
-  markdownTransform,
-  LaTeXTransform,
-  PDFTransform,
-  SVGTransform,
-  ScriptTransform
-} from 'transformime-jupyter-transformers';
+  HTMLTransformer,
+  SVGTransformer,
+  JavascriptTransformer,
+  LatexTransformer,
+  MimeMap,
+  ITransformer
+} from '../transformime';
 
 import {
   sanitize
@@ -111,26 +108,35 @@ const RESULT_CLASS = 'jp-OutputArea-result';
  * A list of transformers used to render outputs
  *
  * #### Notes
- * The transformers are in ascending priority--later transforms are more
- * important than earlier ones.
+ * The transformers are checked in order--an earlier one
+ * takes precedence over a later one.
  */
 const transformers = [
-  TextTransformer,
-  PDFTransform,
-  ImageTransformer,
-  SVGTransform,
-  consoleTextTransform,
-  LaTeXTransform,
-  markdownTransform,
-  HTMLTransformer,
-  ScriptTransform
+  new JavascriptTransformer(),
+  new HTMLTransformer(),
+  new ImageTransformer(),
+  new SVGTransformer(),
+  new LatexTransformer(),
+  new ConsoleTextTransformer(),
+  new TextTransformer()
 ];
+
+let transformer_map: MimeMap<ITransformer<Widget>> = {};
+let transformer_order: string[] = [];
+
+for (let t of transformers) {
+  for (let m of t.mimetypes) {
+    transformer_order.push(m);
+    transformer_map[m] = t;
+  }
+}
+
 
 /**
  * A list of outputs considered safe.
  */
-const safeOutputs = ['text/plain', 'text/latex', 'image/png', 'image/jpeg',
-                     'jupyter/console-text'];
+const safeOutputs = ['text/plain', 'text/latex', 'image/png', 'image/jpeg', 
+                     'application/vnd.jupyter.console-text'];
 
 /**
  * A list of outputs that are sanitizable.
@@ -140,7 +146,7 @@ const sanitizable = ['text/svg', 'text/html'];
 /**
  * The global transformime transformer.
  */
-const transform = new Transformime(transformers);
+const transform = new Transformime<Widget>(transformer_map, transformer_order);
 
 
 /**
@@ -192,7 +198,7 @@ class OutputAreaWidget extends Widget {
    * Create an output node from an output model.
    */
   protected createOutput(output: IOutput): Widget {
-    let widget = new Widget();
+    let widget = new Panel();
     widget.addClass(OUTPUT_CLASS);
     let bundle: MimeBundle;
     this._sanitized = false;
@@ -200,18 +206,18 @@ class OutputAreaWidget extends Widget {
     case 'execute_result':
       bundle = (output as IExecuteResult).data;
       widget.addClass(EXECUTE_CLASS);
-      let prompt = document.createElement('div');
-      prompt.className = PROMPT_CLASS;
+      let prompt = new Widget();
+      prompt.addClass(PROMPT_CLASS);
       let count = (output as IExecuteResult).execution_count;
-      prompt.textContent = `Out [${count === null ? ' ' : count}]:`;
-      widget.node.appendChild(prompt);
+      prompt.node.textContent = `Out [${count === null ? ' ' : count}]:`;
+      widget.addChild(prompt);
       break;
     case 'display_data':
       bundle = (output as IDisplayData).data;
       widget.addClass(DISPLAY_CLASS);
       break;
     case 'stream':
-      bundle = {'jupyter/console-text': (output as IStream).text};
+      bundle = {'application/vnd.jupyter.console-text': (output as IStream).text};
       if ((output as IStream).name == 'stdout') {
         widget.addClass(STDOUT_CLASS);
       } else {
@@ -221,7 +227,7 @@ class OutputAreaWidget extends Widget {
     case 'error':
       let out: IError = output as IError;
       let traceback = out.traceback.join('\n');
-      bundle = {'jupyter/console-text': traceback || `${out.ename}: ${out.evalue}`};
+      bundle = {'application/vnd.jupyter.console-text': traceback || `${out.ename}: ${out.evalue}`};
       widget.addClass(ERROR_CLASS);
       break;
     default:
@@ -238,14 +244,7 @@ class OutputAreaWidget extends Widget {
         } else if (sanitizable.indexOf(key) !== -1) {
           let out = bundle[key];
           if (typeof out === 'string') {
-            bundle[key] = sanitize(out as string);
-            this._sanitized = true;
-          } else {
-            bundle[key] = [];
-            let outs = out as string[];
-            for (let out of outs) {
-              (bundle[key] as string[]).push(sanitize(out));
-            }
+            bundle[key] = sanitize(out);
             this._sanitized = true;
           }
         } else {
@@ -258,10 +257,16 @@ class OutputAreaWidget extends Widget {
       }
     }
 
-    transform.transform(bundle, document).then(result => {
-      widget.node.appendChild(result.el);
-      result.el.classList.add(RESULT_CLASS);
-    });
+    if (bundle) {
+      let child = transform.transform(bundle);
+      if (child) {
+        child.addClass(RESULT_CLASS);
+        widget.addChild(child);
+      } else {
+        console.log("Did not find transformer for output mimebundle.")
+        console.log(bundle);
+      }
+    }
     return widget;
   }
 
