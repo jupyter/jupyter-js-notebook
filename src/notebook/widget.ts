@@ -335,6 +335,16 @@ class NotebookWidget extends Widget {
   }
 
   /**
+   * Get the rendermime used in the widget.
+   *
+   * #### Notes
+   * This is a read-only property.
+   */
+  get rendermime(): RenderMime<Widget> {
+    return this._rendermime;
+  }
+
+  /**
    * Dispose of the resources held by the widget.
    */
   dispose() {

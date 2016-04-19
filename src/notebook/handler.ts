@@ -47,6 +47,42 @@ import {
   NotebookPanel
 } from './widget';
 
+import {
+  ISignal, Signal, clearSignalData
+} from 'phosphor-signaling';
+
+
+export
+class NotebookContext {
+  constructor(widget: NotebookPanel) {
+    this.widget = widget;
+  }
+  widget: NotebookPanel;
+}
+
+/**
+ * A class providing various signals for notebooks.
+ */
+export
+class NotebookSignals {
+  /**
+   * A signal emitted when a notebook is created.
+   */
+  get newNotebookSignal(): ISignal<NotebookSignals, NotebookContext> {
+    return NotebookModelPrivate.newNotebookSignal.bind(this);
+  }
+
+  // Perhaps we should just have an observable list of notebooks and just connect to that.
+}
+
+namespace NotebookModelPrivate {
+  /**
+   * A signal emitted when a new notebook is created.
+   */
+  export
+  const newNotebookSignal = new Signal<NotebookSignals, NotebookContext>();
+}
+
 
 /**
  * An implementation of a notebook file handler.
@@ -54,11 +90,21 @@ import {
 export
 class NotebookFileHandler extends AbstractFileHandler<NotebookPanel> {
 
-  constructor(contents: IContentsManager, session: INotebookSessionManager, rendermime: RenderMime<Widget>) {
+  /**
+   * Construct a notebook file handler.
+   *
+   * @param contents - A contents manager.
+   * @param session - A session manager.
+   * @param rendermime - A global rendermime instance that is cloned for each notebook.
+   * @param nbsignals - A NotebookSignals object that we will emit signals on when a notebook is created.
+   */
+  constructor(contents: IContentsManager, session: INotebookSessionManager,
+              rendermime: RenderMime<Widget>, nbsignals: NotebookSignals) {
     super(contents);
     this._session = session;
     this._rendermime = rendermime;
     this._kernelSpecs = getKernelSpecs({});
+    this._nbsignals = nbsignals;
   }
 
   /**
@@ -121,7 +167,12 @@ class NotebookFileHandler extends AbstractFileHandler<NotebookPanel> {
   protected createWidget(contents: IContentsModel): NotebookPanel {
     let model = new NotebookModel();
     let manager = new NotebookManager(model, this.manager);
-    let panel = new NotebookPanel(manager, this._rendermime);
+
+    // We may make notebook-specific changes to the rendermime in notebook extensions,
+    // so clone the global instance
+    let rendermime = this._rendermime.clone();
+
+    let panel = new NotebookPanel(manager, rendermime);
     panel.model.stateChanged.connect((model, args) => {
       if (args.name !== 'dirty') {
         return;
@@ -133,6 +184,7 @@ class NotebookFileHandler extends AbstractFileHandler<NotebookPanel> {
       }
     });
     panel.title.text = contents.name;
+    this._nbsignals.newNotebookSignal.emit(new NotebookContext(panel))
     return panel;
   }
 
@@ -174,6 +226,7 @@ class NotebookFileHandler extends AbstractFileHandler<NotebookPanel> {
   private _session: INotebookSessionManager = null;
   private _kernelSpecs: Promise<IKernelSpecIds> = null;
   private _rendermime: RenderMime<Widget> = null;
+  private _nbsignals: NotebookSignals = null;
 }
 
 
