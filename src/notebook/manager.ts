@@ -52,17 +52,19 @@ class NotebookManager {
    * Delete selected cell(s), putting them on the undelete stack.
    */
   delete(): void {
-    let undelete: ICellModel[] = [];
+    let todelete: ICellModel[] = [];
     let model = this.model;
     for (let i = 0; i < model.cells.length; i++) {
       let cell = model.cells.get(i);
       if (model.isSelected(cell)) {
-        undelete.push(this.cloneCell(cell));
-        model.cells.remove(cell);
+        todelete.push(cell);
       }
     }
-    if (undelete.length) {
-      this._undeleteStack.push(undelete);
+    for (let cell of todelete) {
+      model.cells.remove(cell);
+    }
+    if (todelete.length) {
+      this._undeleteStack.push(todelete);
     }
     if (this._undeleteStack.length > DELETE_STACK_SIZE) {
       this._undeleteStack.shift();
@@ -171,7 +173,6 @@ class NotebookManager {
    */
   copy(): void {
     this._copied = [];
-    this._cut = [];
     let model = this.model;
     for (let i = 0; i < model.cells.length; i++) {
       let cell = model.cells.get(i);
@@ -187,15 +188,14 @@ class NotebookManager {
    */
   cut(): void {
     this._copied = [];
-    this._cut = [];
     let model = this.model;
     for (let i = 0; i < model.cells.length; i++) {
       let cell = model.cells.get(i);
       if (model.isSelected(cell)) {
-        this._cut.push(this.cloneCell(cell));
-        model.cells.remove(cell);
+        this._copied.push(this.cloneCell(cell));
       }
     }
+    this.delete();
     this.deselectCells();
   }
 
@@ -204,22 +204,13 @@ class NotebookManager {
    */
   paste(): void {
     let model = this.model;
-    let cut = this._cut;
     let copied = this._copied;
     let index = model.activeCellIndex + 1;
-    if (copied.length > 0) {
-      // Insert copies of the original cells in reverse order.
-      for (let cell of copied.reverse()) {
-        model.cells.insert(index, cell);
-      }
-    } else {
-      // Insert the cut cell(s) in reverse order.
-      for (let cell of cut.reverse()) {
-        model.cells.insert(index, cell);
-      }
+    // Insert the copies of the original cells in reverse order.
+    for (let cell of copied.reverse()) {
+      model.cells.insert(index, cell);
     }
     this._copied = [];
-    this._cut = [];
     this.deselectCells();
   }
 
@@ -422,7 +413,7 @@ class NotebookManager {
   /**
    * Clone a cell model.
    */
-  protected cloneCell(cell: ICellModel): ICellModel {
+  cloneCell(cell: ICellModel): ICellModel {
     switch (cell.type) {
     case 'code':
       return this.model.createCodeCell(cell);

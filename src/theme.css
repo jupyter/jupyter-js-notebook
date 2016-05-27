@@ -142,6 +142,11 @@
 }
 
 
+.jp-Cell.jp-mod-dropTarget {
+  border-top: 1px dashed #E0E0E0;
+}
+
+
 .jp-MarkdownCell {
   font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
